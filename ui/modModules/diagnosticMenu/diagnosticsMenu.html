@@ -1,76 +1,45 @@
-<!-- diagnosticsMenu.html -->
-<!-- FIX: path should be /ui/modModules/diagnosticMenu/... (singular) -->
-<link rel="stylesheet" type="text/css" href="/ui/modModules/diagnosticMenu/diagnosticsMenu.css" />
+angular.module('beamng.stuff')
+.controller('DiagnosticsMenuController', ['$scope', '$state', '$stateParams', function($scope, $state, $stateParams) {
+  // Prevent double-initialization from a second bogus transition
+  if ($scope._initialized) return;
+  $scope._initialized = true;
 
-<div class="diagnostics-menu-bg">
-  <div class="diagnostics-modal">
-    <div class="diagnostics-header">
-      <img src="/ui/assets/SVG/24/gauge.svg" class="diag-logo" alt="Gauge"/>
-      <div>
-        <div class="diag-title">VEHICLE DIAGNOSTIC REPORT</div>
-        <div class="diag-timestamp">
-          Generated: {{diagnosticsTimestamp}}
-        </div>
-      </div>
-      <button class="diagnostics-close" ng-click="goBack()">&#215;</button>
-    </div>
+  $scope.diagnostics = {};
+  $scope.diagnosticsTimestamp = (new Date()).toLocaleString();
+  $scope.goBack = function() { $state.go('computer'); };
 
-    <!-- Show error clearly if diagnostics has one -->
-    <div class="diagnostics-sheet" ng-if="diagnostics.error">
-      <span class="diag-bad"><b>Error:</b> {{diagnostics.error}}</span>
-    </div>
+  // Validate raw param first and ignore the placeholder ":vehicleId"
+  var raw = $stateParams.vehicleId;
+  console.log("diagnosticsMenu.js: entering diagnostics, vehicle id (raw):", raw);
 
-    <!-- Show diagnostic info otherwise -->
-    <div class="diagnostics-sheet" ng-if="!diagnostics.error">
-      <div class="info-row">
-        <span><strong>Vehicle:</strong> <span class="diag-vname">{{diagnostics.vehicleName}}</span></span>
-        <span><strong>Mileage:</strong> <span class="diag-main-number" style="color:#50aeff;">{{diagnostics.mileage | number:0}} mi</span></span>
-        <span><strong>Wear:</strong> <span class="diag-main-number" style="color:#ffc539;">{{diagnostics.wear | number:1}}%</span></span>
-      </div>
-      <div class="info-row">
-        <span><strong>Needs Repair:</strong>
-          <span ng-class="{'diag-bad': diagnostics.needsRepair, 'diag-good': !diagnostics.needsRepair}">
-            {{diagnostics.needsRepair ? "❌ YES" : "✔ NO"}}
-          </span>
-        </span>
-      </div>
-      <hr>
-      <div class="part-section">
-        <div class="section-title">Damaged / Low-Condition Parts</div>
-        <table class="diag-table">
-          <thead>
-            <tr>
-              <th>Part</th>
-              <th>Condition</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr ng-repeat="p in diagnostics.damagedParts">
-              <td class="diag-partname">{{p.name}}</td>
-              <td class="diag-percentage">{{p.percent}}%</td>
-              <td>
-                <span ng-class="{
-                  'diag-bad': p.percent <= 50,
-                  'diag-warn': p.percent > 50 && p.percent < 80,
-                  'diag-good': p.percent >= 80
-                }">
-                  <span ng-if="p.percent > 80">Good</span>
-                  <span ng-if="p.percent > 50 && p.percent <= 80">&#9888; Worn</span>
-                  <span ng-if="p.percent <= 50">&#10060; Critical</span>
-                </span>
-              </td>
-            </tr>
-            <tr ng-if="diagnostics.damagedParts.length === 0">
-              <td colspan="3" class="diag-good">No significant issues detected.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  if (!raw || raw === ':vehicleId') {
+    console.log("diagnosticsMenu.js: invalid/missing vehicleId, aborting.");
+    $scope.diagnostics = { error: "No vehicle selected. Cannot display diagnostics.", damagedParts: [] };
+    return;
+  }
 
-    <div class="diagnostics-modal-footer">
-      <button ng-click="goBack()" class="bng-button-main">Back to Computer</button>
-    </div>
-  </div>
-</div>
+  var vid = parseInt(raw, 10);
+  console.log("diagnosticsMenu.js: vehicle id parsed as:", vid);
+  if (isNaN(vid)) {
+    $scope.diagnostics = { error: "No vehicle selected. Cannot display diagnostics.", damagedParts: [] };
+    return;
+  }
+
+  bngApi.engineLua(
+    'career_modules_inventory.getVehicleDiagnosticsUiData(' + vid + ')',
+    function(ret) {
+      console.log("diagnosticsMenu.js: diagnostics ret:", ret && ret.error ? ("ERROR: " + ret.error) : "OK");
+      $scope.$apply(function() { $scope.diagnostics = ret; });
+    }
+  );
+}])
+
+export default angular.module('diagnosticsMenu', ['ui.router'])
+.config(function($stateProvider) {
+  $stateProvider.state('diagnostics-menu', {
+    // FIX: use the actual folder name "diagnosticMenu" (singular)
+    url: '/diagnostics-menu/:vehicleId',
+    templateUrl: '/ui/modModules/diagnosticMenu/diagnosticsMenu.html',
+    controller: 'DiagnosticsMenuController',
+  });
+});
