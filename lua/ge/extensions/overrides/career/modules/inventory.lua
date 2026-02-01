@@ -2362,11 +2362,12 @@ end
 
 function M.getVehicleDiagnosticsUiData(vehicleId)
   print("[inventory.lua] getVehicleDiagnosticsUiData VEHICLEID:", tostring(vehicleId))
-  -- Use the module-scoped "vehicles" table directly!
+
+  -- Use the module-scoped 'vehicles' table directly; match both numeric and string keys
   local vehicle = vehicles and (vehicles[vehicleId] or vehicles[tostring(vehicleId)])
   if not vehicle then
     print("[inventory.lua] ERROR: requested vehicleId not found! Existing keys in vehicles:")
-    for k, v in pairs(vehicles or {}) do print(" - "..tostring(k)) end
+    for k, _ in pairs(vehicles or {}) do print(" - " .. tostring(k)) end
     return { error = "Vehicle not found", damagedParts = {} }
   end
 
@@ -2383,7 +2384,7 @@ function M.getVehicleDiagnosticsUiData(vehicleId)
       end
     end
   end
-  table.sort(damagedParts,function(a,b) return a.percent < b.percent end)
+  table.sort(damagedParts, function(a,b) return a.percent < b.percent end)
   local avgWear = count>0 and (100 - (sum/count)*100) or 0
   local needsRepair = false
   for _, p in ipairs(damagedParts) do
@@ -2400,7 +2401,6 @@ function M.getVehicleDiagnosticsUiData(vehicleId)
     type         = vehicle.type,
     insurance    = vehicle.isInsured,
     favorite     = vehicle.favorite,
-    -- more fields as needed
   }
 end
 
