@@ -4,7 +4,8 @@
 
 local M = {}
 
-M.dependencies = {"career_career"}
+-- FIX: Ensure computer loads after inventory to break cycle
+M.dependencies = {"career_career", "career_modules_inventory"}
 
 local computerTetherRangeSphere = 4
 local computerTetherRangeBox = 1
@@ -20,11 +21,8 @@ M._pendingDiagnosticsInventoryId = nil
 
 local reopenInProgress = false
 local function reopenMenu()
-	print("[computer.lua] reopenMenu() called - DISABLED to prevent automatic refresh loops")
-	-- DISABLED: All automatic menu refresh logic has been disabled.
-	-- This function is now a no-op to prevent soft-locking during save game loading.
-	-- Menu refreshes should only occur from explicit user button callbacks.
-	return
+  print("[computer.lua] reopenMenu() called - DISABLED to prevent automatic refresh loops")
+  return
 end
 
 local function openMenu(computerFacility, resetActiveVehicleIndex, activityElement)
@@ -45,31 +43,33 @@ local function openMenu(computerFacility, resetActiveVehicleIndex, activityEleme
     table.insert(menuData.vehiclesInGarage, vehicleData)
     computerFunctions.vehicleSpecific[inventoryId] = computerFunctions.vehicleSpecific[inventoryId] or {}
 
+    -- Per-vehicle diagnostics button
     computerFunctions.vehicleSpecific[inventoryId]["diagnostics"] = {
       id = "diagnostics",
-	  label = "Diagnostics Report",
-	  icon = "clipboard",
-	  order = 60,
-	  callback = function(computerId)
-		guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = inventoryId}})
-	  end
-	}
+      label = "Diagnostics Report",
+      icon = "clipboard",
+      order = 60,
+      callback = function(computerId)
+        guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = inventoryId}})
+      end
+    }
+  end
 
-	-- Active/top vehicle diagnostics button
-	computerFunctions.general["diagnosticsActiveVehicle"] = {
-	  id = "diagnosticsActiveVehicle",
-	  label = "Diagnostics Report",
-	  icon = "clipboard",
-	  order = 60,
-	  callback = function(computerId)
-		local vehicleId = M._pendingDiagnosticsInventoryId
-		if not vehicleId and menuData.vehiclesInGarage and #menuData.vehiclesInGarage >= 1 then
-		  vehicleId = menuData.vehiclesInGarage[1].inventoryId
-		end
-		guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = vehicleId}})
-		M._pendingDiagnosticsInventoryId = nil
-	  end
-	}
+  -- Active/top vehicle diagnostics button
+  computerFunctions.general["diagnosticsActiveVehicle"] = {
+    id = "diagnosticsActiveVehicle",
+    label = "Diagnostics Report",
+    icon = "clipboard",
+    order = 60,
+    callback = function(computerId)
+      local vehicleId = M._pendingDiagnosticsInventoryId
+      if not vehicleId and menuData.vehiclesInGarage and #menuData.vehiclesInGarage >= 1 then
+        vehicleId = menuData.vehiclesInGarage[1].inventoryId
+      end
+      guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = vehicleId}})
+      M._pendingDiagnosticsInventoryId = nil
+    end
+  }
 
   menuData.computerFacility = computerFacility
   if not career_modules_linearTutorial.getTutorialFlag("partShoppingComplete") then
@@ -86,7 +86,6 @@ local function openMenu(computerFacility, resetActiveVehicleIndex, activityEleme
     icon = "briefcase",
     order = 210,
     callback = function()
-      -- open dedicated UI state
       local aiWorkerPage = require("career/modules/aiWorkerComputerPage")
       aiWorkerPage.openAIWorkerPage(computerId)
     end
@@ -110,13 +109,12 @@ end
 local function computerButtonCallback(buttonId, inventoryId)
   print("[computer.lua] computerButtonCallback() called - buttonId: " .. tostring(buttonId) .. ", inventoryId: " .. tostring(inventoryId))
   local functionData = nil
-  -- If we have a per-vehicle function and it matches
   if inventoryId and computerFunctions.vehicleSpecific[inventoryId] and computerFunctions.vehicleSpecific[inventoryId][buttonId] then
     functionData = computerFunctions.vehicleSpecific[inventoryId][buttonId]
   else
     functionData = computerFunctions.general[buttonId]
     if buttonId == "diagnosticsActiveVehicle" then
-      M._pendingDiagnosticsInventoryId = inventoryId -- set for general diagnostics (active vehicle)
+      M._pendingDiagnosticsInventoryId = inventoryId
     end
   end
   if functionData and functionData.callback then
