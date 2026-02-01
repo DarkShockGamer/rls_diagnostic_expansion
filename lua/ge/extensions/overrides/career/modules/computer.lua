@@ -47,29 +47,29 @@ local function openMenu(computerFacility, resetActiveVehicleIndex, activityEleme
 
     computerFunctions.vehicleSpecific[inventoryId]["diagnostics"] = {
       id = "diagnostics",
-      label = "Diagnostics Report",
-      icon = "clipboard",
-      order = 60,
-      callback = function(computerId)
-        guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = inventoryId}})
-      end
-    }
-  end
+	  label = "Diagnostics Report",
+	  icon = "clipboard",
+	  order = 60,
+	  callback = function(computerId)
+		guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = inventoryId}})
+	  end
+	}
 
-  computerFunctions.general["diagnosticsActiveVehicle"] = {
-    id = "diagnosticsActiveVehicle",
-    label = "Diagnostics Report",
-    icon = "clipboard",
-    order = 60,
-    callback = function(computerId)
-      local vehicleId = M._pendingDiagnosticsInventoryId
-      if not vehicleId and menuData.vehiclesInGarage and #menuData.vehiclesInGarage >= 1 then
-        vehicleId = menuData.vehiclesInGarage[1].inventoryId
-      end
-      guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = vehicleId}})
-      M._pendingDiagnosticsInventoryId = nil
-    end
-  }
+	-- Active/top vehicle diagnostics button
+	computerFunctions.general["diagnosticsActiveVehicle"] = {
+	  id = "diagnosticsActiveVehicle",
+	  label = "Diagnostics Report",
+	  icon = "clipboard",
+	  order = 60,
+	  callback = function(computerId)
+		local vehicleId = M._pendingDiagnosticsInventoryId
+		if not vehicleId and menuData.vehiclesInGarage and #menuData.vehiclesInGarage >= 1 then
+		  vehicleId = menuData.vehiclesInGarage[1].inventoryId
+		end
+		guihooks.trigger("ChangeState", {state = "diagnostics-menu", params = {vehicleId = vehicleId}})
+		M._pendingDiagnosticsInventoryId = nil
+	  end
+	}
 
   menuData.computerFacility = computerFacility
   if not career_modules_linearTutorial.getTutorialFlag("partShoppingComplete") then
