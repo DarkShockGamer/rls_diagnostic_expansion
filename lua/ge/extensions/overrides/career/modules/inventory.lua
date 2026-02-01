@@ -52,7 +52,7 @@ local vehicleTypeMap = {
   wl40 = "semi",
 }
 
-M.dependencies = {'career_career', "career_modules_log", "render_renderViews", "util_screenshotCreator", "career_modules_garageManager", "career_modules_computer"}
+M.dependencies = {'career_career', "career_modules_log", "render_renderViews", "util_screenshotCreator", "career_modules_garageManager"}
 
 local dateUtils = require('utils/dateUtils')
 local parking = require('gameplay/parking')
@@ -2362,7 +2362,6 @@ end
 
 function M.getVehicleDiagnosticsUiData(vehicleId)
   print("[inventory.lua] getVehicleDiagnosticsUiData VEHICLEID:", tostring(vehicleId))
-
   -- Use the module-scoped 'vehicles' table directly; match both numeric and string keys
   local vehicle = vehicles and (vehicles[vehicleId] or vehicles[tostring(vehicleId)])
   if not vehicle then
